@@ -1,4 +1,4 @@
-// ------------------------------------------------------------------------------
+﻿// ------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
@@ -9,6 +9,7 @@ namespace Microsoft.Graph
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using Microsoft.Graph.Requests;
     using Microsoft.Graph.Core.Requests;
     using Microsoft.Kiota.Abstractions.Authentication;
     using Microsoft.Kiota.Authentication.Azure;
@@ -18,7 +19,7 @@ namespace Microsoft.Graph
     /// <summary>
     /// A default client implementation.
     /// </summary>
-    public class GraphServiceClient : BaseGraphServiceClient, IBaseClient
+    public class GraphServiceClient : BaseGraphServiceClient, IBaseClient, IDisposable
     {
         private static readonly Version assemblyVersion = typeof(GraphServiceClient).GetTypeInfo().Assembly.GetName().Version;
         private static readonly GraphClientOptions graphClientOptions = new GraphClientOptions
@@ -54,6 +55,22 @@ namespace Microsoft.Graph
         /// <summary>
         /// Constructs a new <see cref="GraphServiceClient"/>.
         /// </summary>
+        /// <param name="httpClient">The customized <see cref="HttpClient"/> to be used for making requests</param>
+        /// <param name="tokenCredential">The <see cref="TokenCredential"/> for authenticating request messages.</param>
+        /// <param name="scopes">List of scopes for the authentication context.</param>
+        /// <param name="baseUrl">The base service URL. For example, "https://graph.microsoft.com/v1.0"</param>
+        public GraphServiceClient(
+            HttpClient httpClient,
+            TokenCredential tokenCredential,
+            IEnumerable<string> scopes = null,
+            string baseUrl = null
+            ):this(httpClient, new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(tokenCredential, null, null, scopes?.ToArray() ?? Array.Empty<string>()), baseUrl)
+        {
+        }
+
+        /// <summary>
+        /// Constructs a new <see cref="GraphServiceClient"/>.
+        /// </summary>
         /// <param name="authenticationProvider">The <see cref="IAuthenticationProvider"/> for authenticating request messages.</param>
         /// <param name="baseUrl">The base service URL. For example, "https://graph.microsoft.com/v1.0"</param>
         public GraphServiceClient(
@@ -80,7 +97,7 @@ namespace Microsoft.Graph
         /// <summary>
         /// Gets the <see cref="IRequestAdapter"/> for sending requests.
         /// </summary>
-        public IRequestAdapter RequestAdapter { get; set; }
+        public new IRequestAdapter RequestAdapter { get; set; }
 
         /// <summary>
         /// Gets the <see cref="BatchRequestBuilder"/> for building batch Requests
@@ -89,7 +106,18 @@ namespace Microsoft.Graph
         {
             get
             {
-                return new BatchRequestBuilder(this.RequestAdapter);
+                return new CustomBatchRequestBuilder(this.RequestAdapter);
+            }
+        }
+        
+        /// <summary>
+        /// Cleanup anything as needed
+        /// </summary>
+        public void Dispose()
+        {
+            if (this.RequestAdapter is IDisposable disposable)
+            {
+                disposable.Dispose();
             }
         }
         

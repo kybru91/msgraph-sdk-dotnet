@@ -57,12 +57,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ApiException e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -85,12 +85,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ApiException e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -113,12 +113,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ApiException e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -141,12 +141,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ApiException e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -170,12 +170,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ApiException e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -198,12 +198,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ApiException e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -236,12 +236,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ApiException e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -265,12 +265,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ApiException e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -296,7 +296,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -324,7 +324,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -343,7 +343,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
                                     "<body>Generated from the test</body></html> ";
 
                 var requestInformation = graphClient.Me.Onenote.Sections[firstSectionID].Pages.ToPostRequestInformation(null);
-                requestInformation.SetStreamContent(new MemoryStream(Encoding.UTF8.GetBytes(htmlBody)));
+                requestInformation.SetStreamContent(new MemoryStream(Encoding.UTF8.GetBytes(htmlBody)),"text/html");
                 requestInformation.Headers.Add("Content-Type","text/html");
 
                 // Send the request and get the response.
@@ -372,12 +372,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ApiException e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
         
@@ -406,7 +406,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
                     requestInformation.HttpMethod = Method.POST;
 
                     // Create the request message and add the content.
-                    requestInformation.SetStreamContent(stream);
+                    requestInformation.SetStreamContent(stream,"text/html");
                     
                 }
                 
@@ -425,12 +425,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ODataError e)
             {
-                Assert.True(false, $"Error code: {e.Error.Code}");
+                Assert.Fail($"Error code: {e.Error.Code}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -477,7 +477,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
                     // Create the request message and add the content.
                     requestInformation.HttpMethod = Method.POST;
                     requestInformation.Headers.Add("Content-Type",contentType);
-                    requestInformation.SetStreamContent(await image.ReadAsStreamAsync());
+                    requestInformation.SetStreamContent(await image.ReadAsStreamAsync(),"application/octet-stream");
                     
                     // Deserialize into OneNotePage object.
                     testPage = await graphClient.RequestAdapter.SendAsync<OnenotePage>(requestInformation,OnenotePage.CreateFromDiscriminatorValue);
@@ -491,12 +491,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ODataError e)
             {
-                Assert.True(false, $"Error code: {e.Error.Code}");
+                Assert.Fail($"Error code: {e.Error.Code}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -547,7 +547,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
                 var serializer = new JsonSerializationWriter();
                 serializer.WriteCollectionOfObjectValues<OnenotePatchContentCommand>(string.Empty,commands);
                 
-                requestInformation.SetStreamContent(serializer.GetSerializedContent());
+                requestInformation.SetStreamContent(serializer.GetSerializedContent(),"application/octet-stream");
                 requestInformation.Headers.Add("Content-Type", "application/json");
 
                 // Send the request and get the response.
@@ -555,12 +555,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ODataError e)
             {
-                Assert.True(false, $"Error code: {e.Error.Code}");
+                Assert.Fail($"Error code: {e.Error.Code}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -608,7 +608,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             var requestInformation =
                 graphClient.Me.Onenote.Sections[firstSectionID].Pages.ToGetRequestInformation();
             requestInformation.HttpMethod = Method.POST;
-            requestInformation.SetStreamContent(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(htmlBody)));
+            requestInformation.SetStreamContent(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(htmlBody)),"application/octet-stream");
             requestInformation.Headers.Add("Content-Type","text/html");
             testPage = await graphClient.RequestAdapter.SendAsync(requestInformation,OnenotePage.CreateFromDiscriminatorValue);
 
@@ -664,7 +664,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
                     var requestInformation =
                         graphClient.Me.Onenote.Sections[firstSectionID].Pages.ToGetRequestInformation();
                     requestInformation.HttpMethod = Method.POST;
-                    requestInformation.SetStreamContent(await multiPartContent.ReadAsStreamAsync());
+                    requestInformation.SetStreamContent(await multiPartContent.ReadAsStreamAsync(),"application/octet-stream");
                     requestInformation.Headers.Add("Content-Type",contentType);
                     testPage = await graphClient.RequestAdapter.SendAsync(requestInformation,OnenotePage.CreateFromDiscriminatorValue);
                 }
@@ -677,12 +677,12 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ODataError e)
             {
-                Assert.True(false, $"Error code: {e.Error.Code}");
+                Assert.Fail($"Error code: {e.Error.Code}");
             }
 
             catch (Exception e)
             {
-                Assert.True(false, $"Error code: {e.Message}");
+                Assert.Fail($"Error code: {e.Message}");
             }
         }
 
@@ -703,7 +703,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (Exception)
             {
-                Assert.True(false, "An unexpected exception was thrown. This test case failed.");
+                Assert.Fail("An unexpected exception was thrown. This test case failed.");
             }
         }
     }

@@ -35,14 +35,14 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
         {
             // Check that this item hasn't already been created. 
             // https://graph.microsoft.io/en-us/docs/api-reference/v1.0/api/item_search
-            var searchResults = await graphClient.Drives["driveId"].Items[""].SearchWithQ(fileName).GetAsync();
+            var searchResults = await graphClient.Drives["driveId"].Items[""].SearchWithQ(fileName).GetAsSearchWithQGetResponseAsync();
             foreach (var r in searchResults.Value)
             {
                 if (r.Name != fileName)
                     continue;
                 else
                 {
-                    Assert.True(false, "Test cleanup is not removing the test Excel file from the test tenant. Please check the cleanup code.");
+                    Assert.Fail("Test cleanup is not removing the test Excel file from the test tenant. Please check the cleanup code.");
                 }
             }
         }
@@ -52,7 +52,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             var excelWorkbook = new DriveItem()
             {
                 Name = fileName,
-                FileObject = new FileObject()
+                File = new FileObject()
             };
 
             // Create the Excel file.
@@ -98,9 +98,9 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             catch (ODataError e)
             {
                 if (e.Error.Code == "resourceModified")
-                    Assert.True(false, "Error code: " + e.Error.Code + ", message: " + e.Error.Message);
+                    Assert.Fail("Error code: " + e.Error.Code + ", message: " + e.Error.Message);
                 else
-                    Assert.True(false, "Something happened. Error code: " + e.Error.Code);
+                    Assert.Fail("Something happened. Error code: " + e.Error.Code);
             }
         }
     }

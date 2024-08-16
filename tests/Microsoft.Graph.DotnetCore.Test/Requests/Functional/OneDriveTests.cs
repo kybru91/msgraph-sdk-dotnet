@@ -23,7 +23,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
         public async Task OneDriveSharedWithMe()
         {
 
-            var sharedDriveItems = await graphClient.Drives["driveId"].SharedWithMe.GetAsync();
+            var sharedDriveItems = await graphClient.Drives["driveId"].SharedWithMe.GetAsSharedWithMeGetResponseAsync();
             var permissionsPage = await graphClient.Drives["driveId"].Items[sharedDriveItems.Value[0].Id].Permissions.GetAsync();
             var permissions = new List<Permission>();
             permissions.AddRange(permissionsPage.Value);
@@ -63,7 +63,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
                 foreach (var item in driveItems.Value)
                 {
                     // Let's download the first file we get in the response.
-                    if (item.FileObject != null)
+                    if (item.File != null)
                     {
                         // We'll use the file metadata to determine size and the name of the downloaded file
                         // and to get the download URL.
@@ -128,7 +128,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ODataError e)
             {
-                Assert.True(false, $"Something happened, check out a trace. Error code: {e.Error.Code}");
+                Assert.Fail($"Something happened, check out a trace. Error code: {e.Error.Code}");
             }
         }
 
@@ -153,7 +153,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ODataError e)
             {
-                Assert.True(false, "Something happened, check out a trace. Error code: " + e.Error.Code);
+                Assert.Fail("Something happened, check out a trace. Error code: " + e.Error.Code);
             }
         }
 
@@ -168,7 +168,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
                 foreach (var item in driveItems.Value)
                 {
                     // Let's download the first file we get in the response.
-                    if (item.FileObject != null)
+                    if (item.File != null)
                     {
                         var driveItemContent = await graphClient.Drives["driveId"].Items[item.Id].Content.GetAsync();
                         Assert.NotNull(driveItemContent);
@@ -179,7 +179,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ODataError e)
             {
-                Assert.True(false, "Something happened, check out a trace. Error code: " + e.Error.Code);
+                Assert.Fail("Something happened, check out a trace. Error code: " + e.Error.Code);
             }
         }
 
@@ -196,7 +196,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
                 foreach (var item in driveItems.Value)
                 {
                     // Let's get the first file in the response and expand the permissions set on it.
-                    if (item.FileObject != null)
+                    if (item.File != null)
                     {
                         // Get the permissions on the first file in the response.
                         var driveItem = await graphClient.Drives["driveId"]
@@ -220,7 +220,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ODataError e)
             {
-                Assert.True(false, "Something happened, check out a trace. Error code: " + e.Error.Code);
+                Assert.Fail("Something happened, check out a trace. Error code: " + e.Error.Code);
             }
         }
 
@@ -232,7 +232,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             try
             {
                 // http://graph.microsoft.io/en-us/docs/api-reference/v1.0/api/item_search
-                var driveItems = await graphClient.Drives["driveId"].SearchWithQ("employee services").GetAsync();
+                var driveItems = await graphClient.Drives["driveId"].SearchWithQ("employee services").GetAsSearchWithQGetResponseAsync();
 
                 // Expecting two results.
                 Assert.Equal(2, driveItems.Value.Count);
@@ -240,7 +240,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ODataError e)
             {
-                Assert.True(false, "Something happened, check out a trace. Error code: " + e.Error.Code);
+                Assert.Fail("Something happened, check out a trace. Error code: " + e.Error.Code);
             }
         }
 
@@ -269,7 +269,7 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
             }
             catch (ODataError e)
             {
-                Assert.True(false, "Something happened, check out a trace. Error code: " + e.Error.Code);
+                Assert.Fail("Something happened, check out a trace. Error code: " + e.Error.Code);
             }
         }
 
@@ -313,13 +313,13 @@ namespace Microsoft.Graph.DotnetCore.Test.Requests.Functional
                                                            .Root
                                                            .ItemWithPath(itemToShare.Value[0].Name)
                                                            .Invite
-                                                           .PostAsync(invitePostBody);
+                                                           .PostAsInvitePostResponseAsync(invitePostBody);
 
                 Assert.Equal("Alex Wilber", inviteCollection.Value[0].GrantedTo.User.DisplayName);
             }
             catch (ODataError e)
             {
-                Assert.True(false, "Something happened, check out a trace. Error code: " + e.Error.Code);
+                Assert.Fail("Something happened, check out a trace. Error code: " + e.Error.Code);
             }
         }
     }

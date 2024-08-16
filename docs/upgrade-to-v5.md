@@ -14,7 +14,7 @@ The following section lists out the breaking changes requiring code changes from
 The types in the sdk are now organized into namespaces reflecting their usage as compared to all types being present in the single `Microsoft.Graph` namespace and therefore makes it easier to consume multiple libraries(e.g v1.0 and beta) in the same application.
 
 This therefore comes with the following changes, 
-- The beta v1.0 service library uses `Microsoft.Graph` as its root namespace. 
+- The v1.0 service library uses `Microsoft.Graph` as its root namespace. 
 - The beta service library uses `Microsoft.Graph.Beta` as its root namespace.
 - Model types are now in the  `Microsoft.Graph.Models`/`Microsoft.Graph.Beta.Models` namespaces.
 - RequestBuilder and RequestBody types reside in namespaces relative to the path they are calling. e.g. The `SendMailPostRequestBody` type will reside in the `Microsoft.Graph.Beta.Me.SendMail/Microsoft.Graph.Me.SendMail` namespace if you are sending a mail via the `client.Me.SendMail.PostAsync(sendMailPostRequestBody)` path using the request builders
@@ -130,6 +130,49 @@ var groups = await graphServiceClient
     });
 ```
 
+### Query Parameter Values
+
+Standard Query parameters such as `Select`, `Search` or `Filter` now uses the OData standard with the `$` prefix.
+
+This can break your requests if you do not adapt your parameter values to take this into account.
+
+Example for SharePoint searches:
+
+```cs
+//Valid
+var sites = await graphServiceClient
+                .Sites
+                .GetAsync(requestConfiguration =>
+                {
+                  requestConfiguration.QueryParameters.Search = "\"a1\""; //Quotes are escaped
+                });
+
+//Invalid
+var sites = await graphServiceClient
+                .Sites
+                .GetAsync(requestConfiguration =>
+                {
+                  requestConfiguration.QueryParameters.Search = "a1"; // Numbers not accepted without quotes in $search. Returns an OData exception.
+                });
+
+//Valid
+var allSites = await graphServiceClient
+                .Sites
+                .GetAsync(requestConfiguration =>
+                {
+                  requestConfiguration.QueryParameters.Search = "\"id=*\""; // Select all on the id property
+                });
+
+//Invalid
+var allSites = await graphServiceClient
+                .Sites
+                .GetAsync(requestConfiguration =>
+                {
+                  requestConfiguration.QueryParameters.Search = "\"*\""; // $search="*" returns an empty array
+                });
+```
+To make sure that your conversion is correct verify your query parameters in the [Microsoft Graph Explorer](https://developer.microsoft.com/en-us/graph/graph-explorer) before running your code. Also make sure that special characters are either **escaped** or **URL encoded**.
+
 ### Per-Request Options
 To pass per-request options to the default http middleware to configure actions like redirects and retries, this can be done using the `requestConfiguration` by adding an `IRequestOption` instance to the `Options` collection. For example, adding a `RetryHandlerOption` instance to configure the retry handler option as below.
 
@@ -190,6 +233,53 @@ await pageIterator.IterateAsync();
 
 ```
 
+### `$skipToken` and `$deltaToken` query parameters in delta requests
+Given the API guidance [here](https://github.com/microsoft/api-guidelines/blob/vNext/graph/patterns/change-tracking.md#considerations), the metadata used to generate the SDK does not include the `$skipToken` and `$deltaToken` query parameters.
+The entire url is documented as opaque and the change of the url structure (e.g. using alternative query parameters) is not considered a breaking change. 
+Due to this, urls returned from a delta response should be used entirely by either
+
+1. Using the inbuilt request builders to make subsequent requests from the `@odata.nexlink`(OdataDeltaLink property) or `@odata.deltaLink`(OdataNextLink property) returned from the delta request.
+```cs
+// make the first request
+var deltaResponse = await graphClient.Groups.Delta.GetAsync((requestConfiguration) =>
+{
+    requestConfiguration.QueryParameters.Select = new string[] { "displayName", "description", "mailNickname" };
+});
+
+// use the deltaResponse.OdataDeltaLink/deltaResponse.OdataNextLink to make the next request.
+var deltaRequest = new Microsoft.Graph.Beta.Groups.Delta.DeltaRequestBuilder(deltaResponse.OdataDeltaLink, graphClient.RequestAdapter);
+var secondDeltaResponse = await deltaRequest.GetAsync();
+```
+1. Using the PageIterator
+```cs
+//fetch the first page of groups
+var deltaResponse = await graphClient.Groups.Delta.GetAsync((requestConfiguration) =>
+{
+    requestConfiguration.QueryParameters.Select = new string[] { "displayName", "description", "mailNickname" };
+});
+
+// create a list to hold the groups
+var groups = new List<Group>();
+// create a page iterator to iterate through the pages of the response
+var pageIterator = PageIterator<Group, Microsoft.Graph.Beta.Groups.Delta.DeltaResponse>.CreatePageIterator(graphClient, deltaResponse, group => 
+{
+    groups.Add(group);
+    return true;
+});
+
+// This will iterate follow through the odata.nextLink until the last page is reached with an odata.deltaLink
+await pageIterator.IterateAsync();
+
+if (pageIterator.State == PagingState.Delta) 
+{
+    await Task.Delay(30000);// wait for some time for changes to occur.
+    // call delta again with the deltaLink to get the next page of results
+    Console.WriteLine("Calling delta again with deltaLink");
+    Console.WriteLine("DeltaLink url is: " + pageIterator.Deltalink);
+    await pageIterator.ResumeAsync();
+}
+```
+
 ### Error handling
 Errors and exceptions from the new generated version will be exception classed derived from the [ApiException](https://github.com/microsoft/kiota-abstractions-dotnet/blob/8a136e509c7a71ef889643f047938bdbc3c752be/src/ApiException.cs#L11) class from the Kiota abstrations library. 
 Typically, this will be an instance of [OdataError](https://github.com/microsoftgraph/msgraph-sdk-dotnet/blob/6d1a78fe1ca7d883667b5f231395651e24581653/src/Microsoft.Graph/Generated/Models/ODataErrors/ODataError.cs#L9) and can be handled as below.
@@ -224,6 +314,13 @@ var userDriveId = driveItem.Id;
 var children = await graphServiceClient.Drives[userDriveId].Items["itemId"].Children.GetAsync();
 ```
 
+> NOTE: /drive/root is a shorthand for /drive/items/root so the `itemId` can be replaced with `root` to make a call to get the root folder.
+
+```cs
+// List children in the root drive
+var children = await graphServiceClient.Drives[userDriveId].Items["root"].Children.GetAsync();
+```
+
 2. List children from a site's drive.
 
 ```cs
@@ -243,6 +340,19 @@ var groupDriveId = driveItem.Id;
 // List children in the drive
 var children = await graphServiceClient.Drives[groupDriveId].Items["itemId"].Children.GetAsync();
 ```
+
+#### Upload a small file with conflictBehavior set
+
+To upload a small file (remember the size should not exceed 4mb according to the [docs](https://learn.microsoft.com/en-us/graph/api/driveitem-put-content?view=graph-rest-1.0&tabs=http)) and at the same time, set the `conflictBehavior` [instance attribute](https://learn.microsoft.com/en-us/graph/api/resources/driveitem?view=graph-rest-1.0#instance-attributes) you'll need to do it this way:
+
+```cs
+var requestInformation = graphClient.Drives[drive.Id.ToString()].Root.ItemWithPath("MediaMeta.xml").Content.ToPutRequestInformation(file);
+requestInformation.URI = new Uri(requestInformation.URI.OriginalString +"?@microsoft.graph.conflictBehavior=rename");
+
+var result = await graphClient.RequestAdapter.SendAsync<DriveItem>(requestInformation, DriveItem.CreateFromDiscriminatorValue);
+```
+
+To [upload large files](https://learn.microsoft.com/en-us/graph/sdks/large-file-upload?view=graph-rest-1.0&tabs=csharp#upload-large-file-to-onedrive), the method is slightly different.
 
 ## New Features
 
@@ -297,6 +407,7 @@ await graphServiceClient.Me
 ```
 
 ### Batch Requests
+
 Apart from passing instances of `HttpRequestMessage`, batch requests support the passing of `RequestInformation` instances as follows.
 
 ```cs
@@ -304,9 +415,9 @@ var requestInformation = graphServiceClient
                          .Users
                          .ToGetRequestInformation();
 
-// create the content
+// create the batch request
 var batchRequestContent = new BatchRequestContent(graphServiceClient);
-// add steps
+// add one or more steps (up to 20, or check below)
 var requestStepId = await batchRequestContent.AddBatchRequestStepAsync(requestInformation);
 
 // send and get back response
@@ -316,6 +427,37 @@ var usersResponse = await batchResponseContent.GetResponseByIdAsync<UserCollecti
 List<User> userList = usersResponse.Value;
 
 ```
+
+Find failing responses (and retry)
+
+```cs
+var statusCodes = await batchResponseContent.GetResponsesStatusCodesAsync();
+// all the responses are successfull?
+var allReponsesSuccessFull = statusCodes.Any( x => !BatchResponseContent.IsSuccessStatusCode(x.Value));
+// the responses with a 
+var rateLimitedResponses = statusCodes.Where(x => x.Value == (HttpStatusCode)429);
+// maybe retry those rate limited?
+var retryBatch = batchRequestContent.NewBatchWithFailedRequests(rateLimitedResponses);
+var retryResponse = await graphServiceClient.Batch.PostAsync(retryBatch);
+```
+
+Automatically manage batch size with `BatchRequestContentCollection`.
+The sample above uses the `BatchRequestContent` which has a limit of max. 20 combined requests. This means you'll need to manage the batch size yourself if you go beyond the batch limit of 20 requests.
+
+```csharp
+// Replace BatchRequestContent with BatchRequestContentCollection and you're good to go.
+var batchRequestContent = new BatchRequestContentCollection(graphServiceClient);
+
+// or with a set batch size
+// var batchRequestContent = new BatchRequestContentCollection(graphServiceClient, 4);
+
+// Add "unlimited" requests, but don't use "DependsOn", you cannot be sure they will be in the same request and thus fail.
+var requestStepId = await batchRequestContent.AddBatchRequestStepAsync(requestInformation);
+
+// Execute the request like before and use the response like before.
+```
+
+Using batched requests can make your code a lot faster, if you need to query several endpoints at once or if you're creating/deleting a lot of items at the same time. Check out the [sample code](https://github.com/svrooij/msgraph-sdk-dotnet-batching/tree/main/sample/BatchClient) in this [repository](https://github.com/svrooij/msgraph-sdk-dotnet-batching/) for a complete sample on batching and experience yourself how much faster your application can process those requests.
 
 ### Support for $count in request builders
 
